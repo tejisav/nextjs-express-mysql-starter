@@ -7,12 +7,17 @@
     "start": "NODE_ENV=production node server.js"
   },
   "dependencies": {
+    "bcrypt": "^3.0.4",
     "dotenv": "^6.2.0",
     "express": "^4.14.0",
     "express-session": "^1.15.6",
     "mysql2": "^1.6.5",
     "next": "8.0.3",
+    "nodemailer": "^5.1.1",
+    "nodemailer-direct-transport": "^3.3.2",
+    "nodemailer-smtp-transport": "^2.7.4",
     "react": "16.8.3",
-    "react-dom": "16.8.3"
+    "react-dom": "16.8.3",
+    "reactstrap": "^7.1.0"
   }
 }

@@ -3,8 +3,14 @@ import React from 'react'
 export default () => (
   <div className="login-form">
     <h1>Login Form</h1>
-    <form action="/auth" method="POST">
-      <input type="text" name="email" placeholder="Email" required/>
+    <form action="/login" method="POST">
+      <input type="email" name="email" placeholder="Email" required/>
+      <input type="password" name="password" placeholder="Password" required/>
+      <input type="submit"/>
+    </form>
+    <h1>Signup Form</h1>
+    <form action="/signup" method="POST">
+      <input type="email" name="email" placeholder="Email" required/>
       <input type="password" name="password" placeholder="Password" required/>
       <input type="submit"/>
     </form>
@@ -21,7 +27,7 @@ export default () => (
         padding: 20px 0 20px 0;
       }
       .login-form input[type="password"],
-      .login-form input[type="text"] {
+      .login-form input[type="email"] {
         width: 100%;
         padding: 15px;
         border: 1px solid #dddddd;
