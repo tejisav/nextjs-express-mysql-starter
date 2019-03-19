@@ -16,14 +16,17 @@ app.prepare().then(() => {
   const server = express()
 
   server.use(session({
-    secret: 'secret',
+    secret: 'nextjs-express-mysql-starter',
     resave: true,
-    saveUninitialized: true
+    cookie: { maxAge: 8*60*60*1000 },  // 8 hours
+    saveUninitialized: false
   }));
+
   server.use(bodyParser.urlencoded({ extended: true }));
   server.use(bodyParser.json());
 
-  // Add admin routes
+  server.use('/fonts/ionicons', express.static('./node_modules/ionicons/dist/fonts'))
+
   routes.auth(server)
 
   server.get('*', (req, res) => {

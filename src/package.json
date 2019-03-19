@@ -7,12 +7,17 @@
     "start": "NODE_ENV=production node server.js"
   },
   "dependencies": {
+    "@zeit/next-sass": "^1.0.1",
     "bcrypt": "^3.0.4",
+    "bootstrap": "^4.3.1",
     "dotenv": "^6.2.0",
     "express": "^4.14.0",
     "express-session": "^1.15.6",
+    "ionicons": "^4.5.5",
+    "isomorphic-fetch": "^2.2.1",
     "mysql2": "^1.6.5",
     "next": "8.0.3",
+    "node-sass": "^4.11.0",
     "nodemailer": "^5.1.1",
     "nodemailer-direct-transport": "^3.3.2",
     "nodemailer-smtp-transport": "^2.7.4",

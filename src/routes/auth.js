@@ -6,7 +6,6 @@ const nodemailer = require('nodemailer')
 const nodemailerSmtpTransport = require('nodemailer-smtp-transport')
 const nodemailerDirectTransport = require('nodemailer-direct-transport')
 
-// Send email direct from localhost if no mail server configured
 let nodemailerTransport = nodemailerDirectTransport()
 if (process.env.EMAIL_SERVER && process.env.EMAIL_USERNAME && process.env.EMAIL_PASSWORD) {
   nodemailerTransport = nodemailerSmtpTransport({
@@ -26,40 +25,34 @@ module.exports = (server) => {
     throw new Error('server should be an express instance')
   }
 
-  server.post('/login', async (req, res) => {
-    var email = req.body.email
-    var password = req.body.password
+  server.post('/auth/login', async (req, res) => {
+    const email = req.body.email
+    const password = req.body.password
     if (email && password) {
-      try {
-        const results = await getUsers(email)
-        if (results.length > 0) {
-          if (results[0][0].verified) {
-            bcrypt.compare(password, results[0][0].password).then(function(response) {
+      const results = await getUser(email)
+      if (results[0][0]) {
+        if (results[0][0].verified) {
+          bcrypt.compare(password, results[0][0].password).then(function(response) {
             if (response == true) {
               req.session.loggedin = true
               req.session.email = email
-              res.redirect('/home')			
-              res.end()
+              return res.json(req.session)
+            } else {
+              return res.json({message: 'Incorrect Password!'})
             }
           })
-          } else {
-            res.send('User not verified')
-            res.end()
-          }
         } else {
-          res.send('Incorrect email and/or Password!')			
-          res.end()
+          return res.json({message: 'User not verified'})
         }
-      }catch(e){
-        console.error(e)
+      } else {
+        return res.json({message: 'User not found'})
       }
     } else {
-      res.send('Please enter email and Password!')
-      res.end()
+      return res.json({message: 'Please enter email and Password!'})
     }
   })
 
-  async function getUsers(email) {
+  async function getUser(email) {
     try {
       const results = await pool.query(`SELECT * FROM users WHERE email='${email}';`)
       return results
@@ -68,33 +61,27 @@ module.exports = (server) => {
     }
   }
 
-  server.post('/signup', async (req, res) => {
+  server.post('/auth/signup', async (req, res) => {
     var email = req.body.email
     var password = req.body.password
     if (email && password) {
-      try {
-        bcrypt.hash(password, saltRounds).then(async function(hash) {
-          const results = await addUsers(email, hash)
-          if (results && results.length > 0) {
-            bcrypt.hash(email + hash, saltRounds).then(function(hash) {
-              sendVerificationEmail(email, "http://" + req.headers.host + "/verify?email=" + email + "&hash=" + hash)
-            })
-            res.redirect('/check-email?email=' + email)
-          } else {
-            res.send('User already exists with email ' + email)
-          }
-          res.end();
-        })
-      }catch(e){
-        console.error(e)
-      }
+      bcrypt.hash(password, saltRounds).then(async function(hash) {
+        const results = await addUser(email, hash)
+        if (results && results.length > 0) {
+          bcrypt.hash(email + hash, saltRounds).then(function(hash) {
+            sendVerificationEmail(email, "http://" + req.headers.host + "/auth/verify?email=" + email + "&hash=" + hash)
+          })
+          return res.json({email: email})
+        } else {
+          return res.json({message: 'User already exists with email ' + email})
+        }
+      })
     } else {
-      res.send('Please enter email and Password!')
-      res.end()
+      return res.json({message: 'Please enter email and Password!'})
     }
   })
 
-  async function addUsers(email, password) {
+  async function addUser(email, password) {
     try {
       const results = await pool.query(`INSERT INTO users (email, password) VALUES ("${email}", "${password}");`)
       return results
@@ -119,35 +106,27 @@ module.exports = (server) => {
     })
   }
 
-  server.get('/verify', async (req, res) => {
+  server.get('/auth/verify', async (req, res) => {
     var email = req.query.email
     var hash = req.query.hash
     if (email && hash) {
-      try {
-        const results = await getUsers(email)
-        if (results.length > 0) {
-          bcrypt.compare(email + results[0][0].password, hash).then(async function(response) {
-            if (response == true) {
-              const results = await verifyUsers(email)
-              if (results.length > 0) {
-                res.send('Email verified successfully. You can sign in now.')
-                res.end()
-              } else {
-                res.send('Email already verified. You can sign in now.')
-                res.end()
-              }
+      const results = await getUser(email)
+      if (results.length > 0) {
+        bcrypt.compare(email + results[0][0].password, hash).then(async function(response) {
+          if (response == true) {
+            const results = await verifyUsers(email)
+            if (results.length > 0) {
+              return res.redirect(`/callback?message=Email verified successfully. You can sign in now.`)
+            } else {
+              return res.redirect(`/callback?message=Email already verified. You can sign in now.`)
             }
-          })
-        } else {
-          res.send('User not found with email ' + email)			
-          res.end()
-        }
-      }catch(e){
-        console.error(e)
+          }
+        })
+      } else {
+        return res.redirect(`/callback?message=User not found with email ` + email)
       }
     } else {
-      res.send('Wrong query params.')
-      res.end()
+      return res.redirect(`/callback?message=Wrong query params.`)
     }
   })
 
@@ -159,14 +138,83 @@ module.exports = (server) => {
       console.error(e)
     }
   }
-  
-  server.get('/home', (req, res) => {
-    if (req.session.loggedin) {
-      res.send('Welcome back, ' + req.session.email + '!')
+
+  server.post('/auth/delete', async (req, res) => {
+    if (req.session && req.session.loggedin) {
+      const results = await deleteUsers(req.session.email)
+      if (results.length > 0) {
+        req.session.destroy()
+        res.redirect(`/callback?message=Account deleted successfully.`)
+      } else {
+        res.redirect(`/callback?message=There was some problem deleting your account.`)
+      }
     } else {
-      res.send('Please login to view this page!')
+      res.redirect(`/callback?message=First Sign in to delete your account.`)
     }
-    res.end();
   })
+
+  async function deleteUsers(email) {
+    try {
+      const results = await pool.query(`DELETE FROM users WHERE email='${email}';`)
+      return results
+    }catch(e){
+      console.error(e)
+    }
+  }
+
+  server.get('/auth/signout', (req, res) => {
+    if (req.session && req.session.loggedin) {
+      req.session.destroy()
+      res.redirect(`/callback?message=Successfully signed out.`)
+    } else {
+      res.redirect(`/callback?message=You need to login first.`)
+    }
+  })
+
+  server.get('/auth/session', (req, res) => {
+    if (req.session) {
+      return res.json(req.session)
+    } else {
+      return res.status(403)
+    }
+  })
+
+  server.get('/auth/profile', async (req, res) => {
+    if (req.session && req.session.loggedin) {
+      const results = await getUser(req.session.email)
+      if (results[0][0]) {
+        return res.json({
+          name: results[0][0].name || '',
+          address: results[0][0].address || ''
+        })
+      } else {
+        return res.status(500)
+      }
+    } else {
+      return res.status(403)
+    }
+  })
+
+  server.post('/auth/update', async (req, res) => {
+    if (req.session && req.session.loggedin) {
+      const results = await updateUser(req.body)
+      if (results && results.length > 0) {
+        return res.json({ok: true})
+      } else {
+        return res.status(500)
+      }
+    } else {
+      return res.status(403)
+    }
+  })
+
+  async function updateUser(body) {
+    try {
+      const results = await pool.query(`UPDATE users SET name='${body.name}', address='${body.address}';`)
+      return results
+    }catch(e){
+      console.error(e)
+    }
+  }
 
 }
