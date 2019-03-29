@@ -1,5 +1,9 @@
 # Email Login System Starter
 
+## Tutorial
+[https://tejisav.github.io/2019/03/26/project-b-tutorial.html](https://tejisav.github.io/2019/03/26/project-b-tutorial.html)
+You can follow this tutorial if you want to know in detail about this project.
+
 ## Configuration
 
 ```
@@ -12,6 +16,7 @@
 
 ```
 git clone https://github.com/tejisav/nextjs-express-mysql-starter.git
+cd nextjs-express-mysql-starter/src
 npm install
 npm run dev
 ```
@@ -19,6 +24,8 @@ npm run dev
 ## Building and deploying in production
 
 ```
+git clone https://github.com/tejisav/nextjs-express-mysql-starter.git
+cd nextjs-express-mysql-starter/src
 npm install
 npm run build
 npm start
