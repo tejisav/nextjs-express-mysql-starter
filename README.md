@@ -3,7 +3,7 @@
 ## Configuration
 
 ```
-- Rename .env.example to .env and configure the database environment variables using your AWS RDS MySQL endpoint
+- Rename .env.example to .env and configure the database environment variables using your MySQL endpoint and email credentials
 - Database sql files are provided in the root db directory
 - Make sure your endpoint is accessible to the outside world
 ```
