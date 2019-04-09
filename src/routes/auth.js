@@ -197,7 +197,7 @@ module.exports = (server) => {
 
   server.post('/auth/update', async (req, res) => {
     if (req.session && req.session.loggedin) {
-      const results = await updateUser(req.body)
+      const results = await updateUser(req.body, req.session.email)
       if (results && results.length > 0) {
         return res.json({ok: true})
       } else {
@@ -208,9 +208,9 @@ module.exports = (server) => {
     }
   })
 
-  async function updateUser(body) {
+  async function updateUser(body, email) {
     try {
-      const results = await pool.query(`UPDATE users SET name='${body.name}', address='${body.address}';`)
+      const results = await pool.query(`UPDATE users SET name='${body.name}', address='${body.address}' WHERE email='${email}';`)
       return results
     }catch(e){
       console.error(e)
